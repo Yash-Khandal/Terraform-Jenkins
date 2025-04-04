@@ -35,9 +35,9 @@ pipeline {
             steps {
                 tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
                 withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                    // Likely correct path for the Windows Azure CLI executable
-                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\bin\\az.cmd" login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%'
-                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\bin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
+                    // Correct path to the Windows Azure CLI executable
+                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%'
+                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
                     sh "terraform plan -out=plan.out"
                 }
             }
@@ -50,8 +50,8 @@ pipeline {
                     if (proceed) {
                         tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
                         withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                            // Likely correct path for the Windows Azure CLI executable
-                            sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\bin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
+                            // Correct path to the Windows Azure CLI executable
+                            sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
                             sh "terraform apply plan.out"
                         }
                     } else {
