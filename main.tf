@@ -11,9 +11,9 @@ terraform {
 provider "azurerm" {
   features {}
   client_id       = "4cc4e731-d820-406c-831c-998643733aa3"  # Replace with your client ID
-  client_secret   = "YOUR_PREVIOUS_SECRET"
+  client_secret   = "HNP8Q~w81ZE0hUfx6sz2RAp_LexsYsJiVDGJMbNX"
   tenant_id       = "341f4047-ffad-4c4a-a0e7-b86c7963832b"  # Replace with your tenant ID
-  subscription_id = "YOUR_SUBSCRIPTION_ID" # Replace with your subscription ID
+  subscription_id = "6c1e198f-37fe-4942-b348-c597e7bef44b" # Replace with your subscription ID
 }
 
 # Define the Resource Group
