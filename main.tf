@@ -12,7 +12,7 @@ provider "azurerm" {
   features {}
   client_id       = "YOUR_CLIENT_ID"  # Replace with your client ID
   client_secret   = "YOUR_PREVIOUS_SECRET"
-  tenant_id       = "YOUR_TENANT_ID"  # Replace with your tenant ID
+  tenant_id       = "341f4047-ffad-4c4a-a0e7-b86c7963832b"  # Replace with your tenant ID
   subscription_id = "YOUR_SUBSCRIPTION_ID" # Replace with your subscription ID
 }
 
