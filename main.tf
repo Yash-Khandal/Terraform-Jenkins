@@ -10,7 +10,7 @@ terraform {
 
 provider "azurerm" {
   features {}
-  client_id       = "YOUR_CLIENT_ID"  # Replace with your client ID
+  client_id       = "4cc4e731-d820-406c-831c-998643733aa3"  # Replace with your client ID
   client_secret   = "YOUR_PREVIOUS_SECRET"
   tenant_id       = "341f4047-ffad-4c4a-a0e7-b86c7963832b"  # Replace with your tenant ID
   subscription_id = "YOUR_SUBSCRIPTION_ID" # Replace with your subscription ID
