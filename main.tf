@@ -1,63 +1,46 @@
-pipeline {
-    agent any
-
-    environment {
-        AZURE_CREDENTIALS_ID = 'azure-credentials' // The ID of your Azure credentials in Jenkins
-        TF_VERSION            = '1.7.0'          // Specify your desired Terraform version
-        TF_VAR_resource_group_name = 'rg-storage-linux-cicd'
-        TF_VAR_location            = 'eastus'
-        TF_VAR_storage_account_prefix = 'stolinuxcicd'
-        // Add other Terraform variables here if needed
+# Configure the Azure Provider
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.70" # Or the latest version you prefer
     }
+  }
+}
 
-    stages {
-        stage('Checkout Repo') {
-            steps {
-                checkout scm
-            }
-        }
+provider "azurerm" {
+  features {}
+  
+}
 
-        stage('Terraform Init') {
-            steps {
-                tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
-                sh "terraform init -backend=false"
-            }
-        }
+# Define the Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = "rg-storage-linux-cicd"
+  location = "eastus" # Choose an appropriate Azure region
+}
 
-        stage('Terraform Plan') {
-            steps {
-                tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
-                withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                    // Authenticate with Azure using the credentials stored in Jenkins
-                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%'
-                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
-                    sh "terraform plan -out=plan.out"
-                }
-            }
-        }
+# Define the Azure Linux Storage Account
+resource "azurerm_storage_account" "storage" {
+  name                     = "unique-storage-1" # Unique storage account name
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS" # Locally-redundant storage
+  account_kind             = "StorageV2"
+  
 
-        stage('Terraform Apply') {
-            steps {
-                script {
-                    def proceed = input message: 'Approve Deployment', ok: 'Proceed'
-                    if (proceed) {
-                        tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
-                        withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                            // Ensure the correct subscription is selected (might not be strictly necessary here)
-                            sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
-                            sh "terraform apply plan.out"
-                        }
-                    } else {
-                        echo 'Deployment was not approved.'
-                    }
-                }
-            }
-        }
-    }
+  tags = {
+    environment = "dev"
+    owner       = "cicd-pipeline"
+  }
+}
 
-    post {
-        always {
-            cleanWs()
-        }
-    }
+# Generate a random ID for uniqueness
+resource "random_id" "id" {
+  byte_length = 8
+}
+
+# Output the storage account name
+output "storage_account_name" {
+  value = azurerm_storage_account.storage.name
 }
