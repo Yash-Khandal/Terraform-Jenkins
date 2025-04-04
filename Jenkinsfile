@@ -42,22 +42,18 @@ pipeline {
         }
 
         stage('Terraform Apply') {
-            when {
-                manual('Approve Deployment') // Add manual approval step for production environments
-            }
-            steps {
+    steps {
+        script {
+            def proceed = input message: 'Approve Deployment', ok: 'Proceed'
+            if (proceed) {
                 tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
                 withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
                     sh "az account set --subscription $AZURE_SUBSCRIPTION_ID"
                     sh "terraform apply plan.out"
                 }
+            } else {
+                echo 'Deployment was not approved.'
             }
-        }
-    }
-
-    post {
-        always {
-            cleanWs() // Clean the workspace after each build
         }
     }
 }
