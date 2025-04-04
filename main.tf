@@ -1,49 +1,63 @@
-# Configure the Azure Provider
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.70" # Or the latest version you prefer
+pipeline {
+    agent any
+
+    environment {
+        AZURE_CREDENTIALS_ID = 'azure-credentials' // The ID of your Azure credentials in Jenkins
+        TF_VERSION            = '1.7.0'          // Specify your desired Terraform version
+        TF_VAR_resource_group_name = 'rg-storage-linux-cicd'
+        TF_VAR_location            = 'eastus'
+        TF_VAR_storage_account_prefix = 'stolinuxcicd'
+        // Add other Terraform variables here if needed
     }
-  }
-}
 
-provider "azurerm" {
-  features {}
-  client_id       = "4cc4e731-d820-406c-831c-998643733aa3"  # Replace with your client ID
-  client_secret   = "HNP8Q~w81ZE0hUfx6sz2RAp_LexsYsJiVDGJMbNX"
-  tenant_id       = "341f4047-ffad-4c4a-a0e7-b86c7963832b"  # Replace with your tenant ID
-  subscription_id = "6c1e198f-37fe-4942-b348-c597e7bef44b" # Replace with your subscription ID
-}
+    stages {
+        stage('Checkout Repo') {
+            steps {
+                checkout scm
+            }
+        }
 
-# Define the Resource Group
-resource "azurerm_resource_group" "rg" {
-  name     = "rg-storage-linux-cicd"
-  location = "eastus" # Choose an appropriate Azure region
-}
+        stage('Terraform Init') {
+            steps {
+                tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
+                sh "terraform init -backend=false"
+            }
+        }
 
-# Define the Azure Linux Storage Account
-resource "azurerm_storage_account" "storage" {
-  name                     = "uniquestorageaccount1" # Unique storage account name
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS" # Locally-redundant storage
-  account_kind             = "StorageV2"
-  
+        stage('Terraform Plan') {
+            steps {
+                tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
+                withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
+                    // Authenticate with Azure using the credentials stored in Jenkins
+                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%'
+                    sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
+                    sh "terraform plan -out=plan.out"
+                }
+            }
+        }
 
-  tags = {
-    environment = "dev"
-    owner       = "cicd-pipeline"
-  }
-}
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    def proceed = input message: 'Approve Deployment', ok: 'Proceed'
+                    if (proceed) {
+                        tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
+                        withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
+                            // Ensure the correct subscription is selected (might not be strictly necessary here)
+                            sh '"C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
+                            sh "terraform apply plan.out"
+                        }
+                    } else {
+                        echo 'Deployment was not approved.'
+                    }
+                }
+            }
+        }
+    }
 
-# Generate a random ID for uniqueness
-resource "random_id" "id" {
-  byte_length = 8
-}
-
-# Output the storage account name
-output "storage_account_name" {
-  value = azurerm_storage_account.storage.name
+    post {
+        always {
+            cleanWs()
+        }
+    }
 }
