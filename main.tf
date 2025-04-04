@@ -24,7 +24,7 @@ resource "azurerm_resource_group" "rg" {
 
 # Define the Azure Linux Storage Account
 resource "azurerm_storage_account" "storage" {
-  name                     = "unique-storage-1" # Unique storage account name
+  name                     = "uniquestorageaccount1" # Unique storage account name
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
