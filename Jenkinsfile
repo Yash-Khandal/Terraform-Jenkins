@@ -35,9 +35,19 @@ pipeline {
             steps {
                 tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
                 withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                    sh "az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID"
+                    // Explicitly call the Windows Azure CLI executable (adjust path if needed)
+                    sh '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%'
+                    sh '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
                     sh "terraform plan -out=plan.out"
                 }
+                // More secure way to handle credentials (alternative to the above):
+                /*
+                withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
+                    sh "az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID"
+                    sh "az account set --subscription $AZURE_SUBSCRIPTION_ID"
+                    sh "terraform plan -out=plan.out"
+                }
+                */
             }
         }
 
@@ -48,9 +58,17 @@ pipeline {
                     if (proceed) {
                         tool name: 'Terraform', type: 'org.jenkinsci.plugins.terraform.TerraformInstallation'
                         withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
+                            // Explicitly call the Windows Azure CLI executable (adjust path if needed)
+                            sh '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription %AZURE_SUBSCRIPTION_ID%'
+                            sh "terraform apply plan.out"
+                        }
+                        // More secure way to handle credentials (alternative to the above):
+                        /*
+                        withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
                             sh "az account set --subscription $AZURE_SUBSCRIPTION_ID"
                             sh "terraform apply plan.out"
                         }
+                        */
                     } else {
                         echo 'Deployment was not approved.'
                     }
